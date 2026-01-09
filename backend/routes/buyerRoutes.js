@@ -1,74 +1,4 @@
-// // const express = require("express");
-// // const verifyToken = require("../middleware/authMiddleware");
-// // const allowRoles = require("../middleware/roleMiddleware");
 
-// // const router = express.Router();
-
-// // router.get(
-// //   "/dashboard",
-// //   verifyToken,
-// //   allowRoles("buyer"),
-// //   (req, res) => {
-// //     res.json({
-// //       message: "Welcome Buyer 👋",
-// //       user: req.user
-// //     });
-// //   }   
-// const express = require("express");
-// const verifyToken = require("../middleware/authMiddleware");
-// const allowRoles = require("../middleware/roleMiddleware");
-// const {
-//   getAvailableCattle,
-//   getSingleCattle
-// } = require("../controllers/buyerController");
-
-// const router = express.Router();
-
-// // Buyer – View all cattle
-// router.get(
-//   "/cattle",
-//   verifyToken,
-//   allowRoles("buyer"),
-//   getAvailableCattle
-// );
-
-// // Buyer – View single cattle
-// router.get(
-//   "/cattle/:cattle_id",
-//   verifyToken,
-//   allowRoles("buyer"),
-//   getSingleCattle
-// );
-
-// module.exports = router;
-// const express = require("express");
-// const verifyToken = require("../middleware/authMiddleware");
-// const allowRoles = require("../middleware/roleMiddleware");
-
-// const {
-//   getAvailableCattle,
-//   getSingleCattle
-// } = require("../controllers/buyerController");
-
-// const router = express.Router();
-
-// // Buyer – view all cattle
-// router.get(
-//   "/cattle",
-//   verifyToken,
-//   allowRoles("buyer"),
-//   getAvailableCattle
-// );
-
-// // Buyer – view single cattle
-// router.get(
-//   "/cattle/:cattle_id",
-//   verifyToken,
-//   allowRoles("buyer"),
-//   getSingleCattle
-// );
-
-// module.exports = router; // ✅ THIS IS CRITICAL
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const allowRoles = require("../middleware/roleMiddleware");
@@ -77,12 +7,13 @@ const {
   getAvailableCattle,
   getSingleCattle,
   getPayableOrders,
-  payForOrder
+  payForOrder,
 } = require("../controllers/buyerController");
 
 const {
   placeOrder,
-  getBuyerOrders
+  getBuyerOrders,
+  downloadInvoice
 } = require("../controllers/buyerOrderController");
 
 const router = express.Router();
@@ -113,6 +44,13 @@ router.put(
   verifyToken,
   allowRoles("buyer"),
   payForOrder
+);
+
+router.get(
+  "/orders/:orderId/invoice",
+  verifyToken,
+  allowRoles("buyer"),
+  downloadInvoice
 );
 
 module.exports = router;

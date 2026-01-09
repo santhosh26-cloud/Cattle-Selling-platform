@@ -151,7 +151,10 @@ const getPayableOrders = async (req, res) => {
 };
 
 const payForOrder = async (req, res) => {
+  console.log("Received Shipping Data:", req.body);
+
   const { orderId } = req.params;
+  const { address, phone, note } = req.body; // IGNORE card/upi fields
   const userId = req.user.user_id;
 
   try {
@@ -166,9 +169,8 @@ const payForOrder = async (req, res) => {
 
     const buyerId = buyerResult.recordset[0].buyer_id;
 
-    // Verify order
     const orderResult = await sql.query`
-      SELECT cattle_id
+      SELECT cattle_id, seller_id
       FROM Orders
       WHERE order_id = ${orderId}
         AND buyer_id = ${buyerId}
@@ -180,7 +182,13 @@ const payForOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid or already paid order" });
     }
 
-    const cattleId = orderResult.recordset[0].cattle_id;
+    const { cattle_id, seller_id } = orderResult.recordset[0];
+
+    // Insert only supported fields
+    await sql.query`
+      INSERT INTO Shipping (order_id, address, phone, note, shipping_status)
+      VALUES (${orderId}, ${address}, ${phone}, ${note}, 'processing')
+    `;
 
     // Update payment
     await sql.query`
@@ -189,15 +197,21 @@ const payForOrder = async (req, res) => {
       WHERE order_id = ${orderId}
     `;
 
-    // Update cattle
+    // Update cattle status
     await sql.query`
-      UPDATE Cattle
-      SET status = 'sold'
-      WHERE cattle_id = ${cattleId}
+      UPDATE Cattle SET status='sold' WHERE cattle_id=${cattle_id}
     `;
 
-    res.json({ message: "Payment successful 💳🐄" });
+    // ADD NOTIFICATION
+    await sql.query`
+      INSERT INTO SellerNotifications (seller_id, title, message, is_read)
+      VALUES (${seller_id}, 'New Payment', 'A buyer has paid for your cattle.', 0)
+    `;
+
+    res.json({ message: "SUCCESS" });
+
   } catch (err) {
+    console.error("PAYMENT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 };

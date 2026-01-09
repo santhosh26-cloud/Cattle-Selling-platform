@@ -1,181 +1,382 @@
-console.log("🔥 sellerController LOADED");
-const sql = require("mssql");
 
-const addCattle = async (req, res) => {
-  try {
-    const { breed_id, age, price, status } = req.body;
-    const userId = req.user.user_id;
+// const sql = require("mssql");
 
-    // 1️⃣ Get seller_id from user_id
-    const sellerResult = await sql.query`
-      SELECT seller_id FROM Sellers WHERE user_id = ${userId}
-    `;
-
-    if (sellerResult.recordset.length === 0) {
-      return res.status(403).json({ message: "Seller profile not found" });
-    }
-
-    const sellerId = sellerResult.recordset[0].seller_id;
-
-    // 2️⃣ Insert cattle
-    await sql.query`
-      INSERT INTO Cattle (seller_id, breed_id, age, price, status)
-      VALUES (${sellerId}, ${breed_id}, ${age}, ${price}, ${status})
-    `;
-
-    res.status(201).json({ message: "Cattle added successfully 🐄" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// const getSellerOrders = async (req, res) => {
+// /* ============================================================
+//    ADD CATTLE
+// ============================================================ */
+// const addCattle = async (req, res) => {
 //   try {
-//     const sellerUserId = req.user.user_id;
+//     const { breed_id, age, price, status, description } = req.body;
 
-//     // 1️⃣ Get seller profile
-//     const sellerResult = await sql.query`
-//       SELECT seller_id
-//       FROM Sellers
-//       WHERE user_id = ${sellerUserId}
+//     const seller = await sql.query`
+//       SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
 //     `;
 
-//     if (sellerResult.recordset.length === 0) {
+//     if (!seller.recordset.length) {
 //       return res.status(403).json({ message: "Seller profile not found" });
 //     }
 
-//     const sellerId = sellerResult.recordset[0].seller_id;
+//     const sellerId = seller.recordset[0].seller_id;
+//     const imageUrl = req.file ? `/uploads/cattle/${req.file.filename}` : null;
 
-//     // 2️⃣ Get orders for seller's cattle
-//     const ordersResult = await sql.query`
+//     await sql.query`
+//       INSERT INTO Cattle (seller_id, breed_id, age, price, status, description, image_url)
+//       VALUES (${sellerId}, ${breed_id}, ${age}, ${price}, ${status}, ${description}, ${imageUrl})
+//     `;
+
+//     res.json({ message: "Cattle added successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// /* ============================================================
+//    GET ALL CATTLE FOR SELLER
+// ============================================================ */
+// const getSellerCattle = async (req, res) => {
+//   try {
+//     const seller = await sql.query`
+//       SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
+//     `;
+
+//     const sellerId = seller.recordset[0].seller_id;
+
+//     const result = await sql.query`
+//       SELECT cattle_id, breed_id, age, price, status, description, image_url
+//       FROM Cattle
+//       WHERE seller_id = ${sellerId}
+//     `;
+
+//     res.json(result.recordset);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// /* ============================================================
+//    GET SINGLE CATTLE (FOR EDIT)
+// ============================================================ */
+// const getSingleCattle = async (req, res) => {
+//   try {
+//     const result = await sql.query`
+//       SELECT cattle_id, breed_id, age, price, status, description, image_url
+//       FROM Cattle 
+//       WHERE cattle_id = ${req.params.id}
+//     `;
+
+//     if (!result.recordset.length) {
+//       return res.status(404).json({ message: "Cattle not found" });
+//     }
+
+//     res.json(result.recordset[0]);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// /* ============================================================
+//    UPDATE CATTLE
+// ============================================================ */
+// const updateCattle = async (req, res) => {
+//   try {
+//     const { breed_id, age, price, status, description } = req.body;
+//     const imageUrl = req.file ? `/uploads/cattle/${req.file.filename}` : null;
+
+//     if (imageUrl) {
+//       await sql.query`
+//         UPDATE Cattle
+//         SET breed_id = ${breed_id}, 
+//             age = ${age}, 
+//             price = ${price}, 
+//             status = ${status},
+//             description = ${description},
+//             image_url = ${imageUrl}
+//         WHERE cattle_id = ${req.params.id}
+//       `;
+//     } else {
+//       await sql.query`
+//         UPDATE Cattle
+//         SET breed_id = ${breed_id}, 
+//             age = ${age}, 
+//             price = ${price},
+//             status = ${status},
+//             description = ${description}
+//         WHERE cattle_id = ${req.params.id}
+//       `;
+//     }
+
+//     res.json({ message: "Cattle updated successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// /* ============================================================
+//    DELETE CATTLE
+// ============================================================ */
+// const deleteCattle = async (req, res) => {
+//   try {
+//     await sql.query`
+//       DELETE FROM Cattle WHERE cattle_id = ${req.params.id}
+//     `;
+
+//     res.json({ message: "Cattle deleted successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// /* ============================================================
+//    GET SELLER ORDERS
+// ============================================================ */
+// const getSellerOrders = async (req, res) => {
+//   try {
+//     const seller = await sql.query`
+//       SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
+//     `;
+
+//     const sellerId = seller.recordset[0].seller_id;
+
+//     const result = await sql.query`
 //       SELECT
 //         o.order_id,
 //         o.order_status,
 //         o.payment_status,
-//         o.order_date,
 //         c.cattle_id,
 //         c.price,
+//         c.description,
 //         b.breed_name,
 //         u.name AS buyer_name
 //       FROM Orders o
 //       JOIN Cattle c ON o.cattle_id = c.cattle_id
 //       JOIN Breeds b ON c.breed_id = b.breed_id
-//       JOIN Buyers by ON o.buyer_id = by.buyer_id
-//       JOIN Users u ON by.user_id = u.user_id
+//       JOIN Buyers bu ON o.buyer_id = bu.buyer_id
+//       JOIN Users u ON bu.user_id = u.user_id
 //       WHERE c.seller_id = ${sellerId}
-//       ORDER BY o.order_date DESC
 //     `;
 
-//     res.json(ordersResult.recordset);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
+//     res.json(result.recordset);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
 //   }
 // };
-const getSellerOrders = async (req, res) => {
-  try {
-    const sellerUserId = req.user.user_id;
 
-    // 1️⃣ Get seller_id
-    const sellerResult = await sql.query`
-      SELECT seller_id
-      FROM Sellers
-      WHERE user_id = ${sellerUserId}
+// /* ============================================================
+//    UPDATE ORDER STATUS
+// ============================================================ */
+// const updateOrderStatus = async (req, res) => {
+//   try {
+//     const { status } = req.body;
+
+//     await sql.query`
+//       UPDATE Orders SET order_status = ${status} 
+//       WHERE order_id = ${req.params.order_id}
+//     `;
+
+//     res.json({ message: "Order status updated" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// module.exports = {
+//   addCattle,
+//   getSellerCattle,
+//   getSingleCattle,
+//   updateCattle,
+//   deleteCattle,
+//   getSellerOrders,
+//   updateOrderStatus,
+// };
+const sql = require("mssql");
+
+/* ============================================================
+   ADD CATTLE
+============================================================ */
+const addCattle = async (req, res) => {
+  try {
+    const { breed_id, age, price, status, description, tags } = req.body;
+
+    const seller = await sql.query`
+      SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
     `;
 
-    if (sellerResult.recordset.length === 0) {
+    if (!seller.recordset.length) {
       return res.status(403).json({ message: "Seller profile not found" });
     }
 
-    const sellerId = sellerResult.recordset[0].seller_id;
+    const sellerId = seller.recordset[0].seller_id;
+    const imageUrl = req.file ? `/uploads/cattle/${req.file.filename}` : null;
 
-    // 2️⃣ Get orders (FIXED alias)
-    const ordersResult = await sql.query`
+    await sql.query`
+      INSERT INTO Cattle (seller_id, breed_id, age, price, status, description, tags, image_url)
+      VALUES (${sellerId}, ${breed_id}, ${age}, ${price}, ${status}, ${description}, ${tags}, ${imageUrl})
+    `;
+
+    res.json({ message: "Cattle added successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================================
+   GET ALL CATTLE FOR SELLER
+============================================================ */
+const getSellerCattle = async (req, res) => {
+  try {
+    const seller = await sql.query`
+      SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
+    `;
+
+    const sellerId = seller.recordset[0].seller_id;
+
+    const result = await sql.query`
+      SELECT cattle_id, breed_id, age, price, status, description, tags, image_url
+      FROM Cattle
+      WHERE seller_id = ${sellerId}
+    `;
+
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================================
+   GET SINGLE CATTLE (FOR EDIT)
+============================================================ */
+const getSingleCattle = async (req, res) => {
+  try {
+    const result = await sql.query`
+      SELECT cattle_id, breed_id, age, price, status, description, tags, image_url
+      FROM Cattle 
+      WHERE cattle_id = ${req.params.id}
+    `;
+
+    if (!result.recordset.length) {
+      return res.status(404).json({ message: "Cattle not found" });
+    }
+
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================================
+   UPDATE CATTLE
+============================================================ */
+const updateCattle = async (req, res) => {
+  try {
+    const { breed_id, age, price, status, description, tags } = req.body;
+    const imageUrl = req.file ? `/uploads/cattle/${req.file.filename}` : null;
+
+    if (imageUrl) {
+      await sql.query`
+        UPDATE Cattle
+        SET breed_id = ${breed_id},
+            age = ${age},
+            price = ${price},
+            status = ${status},
+            description = ${description},
+            tags = ${tags},
+            image_url = ${imageUrl}
+        WHERE cattle_id = ${req.params.id}
+      `;
+    } else {
+      await sql.query`
+        UPDATE Cattle
+        SET breed_id = ${breed_id},
+            age = ${age},
+            price = ${price},
+            status = ${status},
+            description = ${description},
+            tags = ${tags}
+        WHERE cattle_id = ${req.params.id}
+      `;
+    }
+
+    res.json({ message: "Cattle updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================================
+   DELETE CATTLE
+============================================================ */
+const deleteCattle = async (req, res) => {
+  try {
+    await sql.query`
+      DELETE FROM Cattle WHERE cattle_id = ${req.params.id}
+    `;
+
+    res.json({ message: "Cattle deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================================
+   GET SELLER ORDERS
+============================================================ */
+const getSellerOrders = async (req, res) => {
+  try {
+    const seller = await sql.query`
+      SELECT seller_id FROM Sellers WHERE user_id = ${req.user.user_id}
+    `;
+
+    const sellerId = seller.recordset[0].seller_id;
+
+    const result = await sql.query`
       SELECT
         o.order_id,
         o.order_status,
         o.payment_status,
-        o.created_at,
         c.cattle_id,
         c.price,
+        c.description,
+        c.tags,
         b.breed_name,
         u.name AS buyer_name
       FROM Orders o
       JOIN Cattle c ON o.cattle_id = c.cattle_id
       JOIN Breeds b ON c.breed_id = b.breed_id
-      JOIN Buyers bu ON o.buyer_id = bu.buyer_id   -- ✅ FIXED
+      JOIN Buyers bu ON o.buyer_id = bu.buyer_id
       JOIN Users u ON bu.user_id = u.user_id
       WHERE c.seller_id = ${sellerId}
-      ORDER BY o.created_at DESC
     `;
 
-    res.json(ordersResult.recordset);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
+/* ============================================================
+   UPDATE ORDER STATUS
+============================================================ */
 const updateOrderStatus = async (req, res) => {
-  const { order_id } = req.params;
-  const { status } = req.body;
-
-  if (!["accepted", "rejected"].includes(status)) {
-    return res.status(400).json({ message: "Invalid status" });
-  }
-
   try {
-    const sellerUserId = req.user.user_id;
-
-    // 1️⃣ Get seller_id
-    const sellerResult = await sql.query`
-      SELECT seller_id FROM Sellers WHERE user_id = ${sellerUserId}
-    `;
-
-    if (sellerResult.recordset.length === 0) {
-      return res.status(403).json({ message: "Seller profile not found" });
-    }
-
-    const sellerId = sellerResult.recordset[0].seller_id;
-
-    // 2️⃣ Check order belongs to seller
-    const orderResult = await sql.query`
-      SELECT o.order_id, o.cattle_id
-      FROM Orders o
-      JOIN Cattle c ON o.cattle_id = c.cattle_id
-      WHERE o.order_id = ${order_id}
-      AND c.seller_id = ${sellerId}
-    `;
-
-    if (orderResult.recordset.length === 0) {
-      return res.status(403).json({ message: "Order not found or unauthorized" });
-    }
-
-    const cattleId = orderResult.recordset[0].cattle_id;
-
-    // 3️⃣ Update order status
-    await sql.query`
-      UPDATE Orders
-      SET order_status = ${status}
-      WHERE order_id = ${order_id}
-    `;
-
-    // 4️⃣ Update cattle status
-    const cattleStatus = status === "accepted" ? "sold" : "available";
+    const { status } = req.body;
 
     await sql.query`
-      UPDATE Cattle
-      SET status = ${cattleStatus}
-      WHERE cattle_id = ${cattleId}
+      UPDATE Orders SET order_status = ${status} 
+      WHERE order_id = ${req.params.order_id}
     `;
 
-    res.json({ message: `Order ${status} successfully` });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json({ message: "Order status updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-module.exports = { 
+module.exports = {
   addCattle,
+  getSellerCattle,
+  getSingleCattle,
+  updateCattle,
+  deleteCattle,
   getSellerOrders,
-  updateOrderStatus
- };
-console.log("🔥 sellerController exports =", module.exports);
+  updateOrderStatus,
+};

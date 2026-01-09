@@ -12,7 +12,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const app = express();
 const PORT = 5000;
 
-/* ✅ CORS (FIXED) */
+/* CORS */
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
@@ -22,15 +22,16 @@ app.use(cors({
 
 app.use(express.json());
 
-// DB
+// Connect DB
 connectDB();
 
-// Routes
-app.use("/api/users", userRoutes);
+// ROUTES
 app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);       // ✔ ONLY THIS FOR USER ROUTES
 app.use("/api/buyer", buyerRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/uploads", express.static("uploads"));
 
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is connected 🚀" });
